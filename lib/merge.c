@@ -283,6 +283,21 @@ int get_delta_info(const char *device, struct merge_info *info)
 	return 0;
 }
 
+/* Merge one or more deltas (specified by **images and start/end_level).
+ * Merge can be online or offline, with or without top delta, to either
+ * a lowest speicifed delta or to a new_image.
+ *
+ * Parameters:
+ *  dev		ploop device (for online merge) or NULL (for offline merge)
+ *  start_level	start (lower) delta level to merge (online only)
+ *  end_level	end (higher) delta level to merge (online only)
+ *  raw		set to 1 if merging to base delta which is raw delta
+ *  merge_top	set to 1 is top rw delta is to be merged (online only)
+ *  images	list of delta files to be merged, from top to bottom
+ *  new_image	new image file name to merge to (NULL to merge to lowest delta)
+ *
+ * Returns: 0 or SYSEXIT_* error
+ */
 int merge_image(const char *device, int start_level, int end_level, int raw, int merge_top,
 		      char **images, const char *new_image)
 {
@@ -306,6 +321,7 @@ int merge_image(const char *device, int start_level, int end_level, int raw, int
 	}
 
 	if (device) {
+		/* Online merge */
 		if (start_level >= end_level || start_level < 0) {
 			ploop_err(0, "Invalid parameters: start_level %d end_level %d",
 					start_level, end_level);
