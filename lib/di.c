@@ -449,7 +449,7 @@ int ploop_di_remove_image(struct ploop_disk_images_data *di, const char *guid,
 	return 0;
 }
 
-int ploop_di_merge_image(struct ploop_disk_images_data *di, const char *guid, char **fname)
+int ploop_di_merge_image(struct ploop_disk_images_data *di, const char *guid)
 {
 	int i, snap_id, image_id, nr_ch;
 	struct ploop_image_data *image = NULL;
@@ -482,11 +482,6 @@ int ploop_di_merge_image(struct ploop_disk_images_data *di, const char *guid, ch
 		return SYSEXIT_PARAM;
 	}
 	image = di->images[image_id];
-	if (fname != NULL) {
-		*fname = strdup(image->file);
-		if (*fname == NULL)
-			return SYSEXIT_MALLOC;
-	}
 
 	/* Caller passed child_guid S2 to delete S1 (S1 <- S2 <- S3) (S2 <- S3)
 	 * so it has merge S2 to S1 and we should update all S1 referrences to S2

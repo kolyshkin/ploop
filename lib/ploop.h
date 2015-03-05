@@ -339,7 +339,7 @@ int ploop_di_add_image(struct ploop_disk_images_data *di, const char *fname,
 void ploop_di_set_temporary(struct ploop_disk_images_data *di, const char *guid);
 int ploop_di_remove_image(struct ploop_disk_images_data *di, const char *guid,
 		int renew_top_uuid, char **fname);
-int ploop_di_merge_image(struct ploop_disk_images_data *di, const char *guid, char **fname);
+int ploop_di_merge_image(struct ploop_disk_images_data *di, const char *guid);
 void ploop_di_change_guid(struct ploop_disk_images_data *di, const char *guid, const char *new_guid);
 PL_EXT char *find_image_by_guid(struct ploop_disk_images_data *di, const char *guid);
 PL_EXT int find_snapshot_by_guid(struct ploop_disk_images_data *di, const char *guid);

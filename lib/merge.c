@@ -886,7 +886,7 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 			raw = 1;
 	}
 
-	names[0] = strdup(child_fname);
+	names[0] = delete_fname = strdup(child_fname);
 	if (names[0] == NULL) {
 		ret = SYSEXIT_MALLOC;
 		goto err;
@@ -910,7 +910,7 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 			raw ? "raw" : "");
 
 	/* make validation before real merge */
-	ret = ploop_di_merge_image(di, child_guid, &delete_fname);
+	ret = ploop_di_merge_image(di, child_guid);
 	if (ret)
 		goto err;
 
@@ -984,7 +984,6 @@ err:
 	for (i = 0; names[i] != NULL; i++)
 		free(names[i]);
 
-	free(delete_fname);
 	ploop_free_array(info.names);
 
 	return ret;
