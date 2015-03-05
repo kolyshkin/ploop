@@ -357,7 +357,7 @@ static void remove_data_from_array(void **array, int nelem, int id)
 		array[i] = array[i+1];
 }
 
-const char * ploop_get_child_by_uuid(struct ploop_disk_images_data *di, const char *guid)
+const char * ploop_find_child_by_guid(struct ploop_disk_images_data *di, const char *guid)
 {
 	int i;
 

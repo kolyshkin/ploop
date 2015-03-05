@@ -782,7 +782,7 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	if (merge_mode == PLOOP_MERGE_WITH_CHILD) {
 		parent_guid = guid;
 		parent_fname = fname;
-		child_guid = ploop_get_child_by_uuid(di, guid);
+		child_guid = ploop_find_child_by_guid(di, guid);
 		if (!child_guid) {
 			ploop_err(0, "Can't find child of uuid %s", guid);
 			goto err;
