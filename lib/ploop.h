@@ -332,6 +332,8 @@ int get_image_param(struct ploop_disk_images_data *di, const char *guid,
 int get_image_param_offline(struct ploop_disk_images_data *di, const char *guid,
                 off_t *size, __u32 *blocksize, int *version);
 PL_EXT char **make_images_list(struct ploop_disk_images_data *di, const char *guid, int reverse);
+char **make_images_list_by_guids(struct ploop_disk_images_data *di,
+		const char *guid, const char *guid2, int reverse);
 
 // manage struct ploop_disk_images_data
 int ploop_di_add_image(struct ploop_disk_images_data *di, const char *fname,

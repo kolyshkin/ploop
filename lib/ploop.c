@@ -97,7 +97,20 @@ int get_list_size(char **list)
 	return i;
 }
 
-char **make_images_list(struct ploop_disk_images_data *di, const char *guid, int reverse)
+/* Given di and two guids, returns a list of images (delta files)
+ * corresponding to these guids.
+ *
+ * Parameters:
+ *  di		dd.xml data
+ *  guid	guid to start from (top one)
+ *  end_guid	guid to stop at, or NULL to stop at base
+ *  reverse	1 to list from base to top, 0 from top
+ *
+ * Returns a pointer to array of char*, having NULL as last element.
+ * Note ploop_free_array() should be used to free memory.
+ */
+char **make_images_list_by_guids(struct ploop_disk_images_data *di,
+		const char *guid, const char *end_guid, int reverse)
 {
 	int n;
 	char **images;
@@ -134,14 +147,22 @@ char **make_images_list(struct ploop_disk_images_data *di, const char *guid, int
 			ploop_err(0, "Inconsistency detected: snapshots > images");
 			goto err;
 		}
+		if (done)
+			break;
 		guid = di->snapshots[snap_id]->parent_guid;
-		if (!strcmp(guid, NONE_UUID)) {
+		if (end_guid && !strcmp(guid, end_guid))
+			done = 1; /* still need to add the last image */
+		else if (!strcmp(guid, NONE_UUID)) {
 			done = 1;
 			break;
 		}
 	}
 	if (!done) {
-		ploop_err(0, "Inconsistency detected, base image not found");
+		if (end_guid)
+			ploop_err(0, "Snapshot %s not found", end_guid);
+		else
+			ploop_err(0, "Inconsistency detected: base image not found");
+
 		goto err;
 	}
 	images[++n] = NULL;
@@ -161,6 +182,11 @@ err:
 	images[n] = NULL;
 	ploop_free_array(images);
 	return NULL;
+}
+
+char **make_images_list(struct ploop_disk_images_data *di, const char *guid, int reverse)
+{
+	return make_images_list_by_guids(di, guid, NULL, reverse);
 }
 
 static int WRITE(int fd, void * buf, unsigned int size)
