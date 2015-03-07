@@ -342,12 +342,17 @@ void ploop_di_set_temporary(struct ploop_disk_images_data *di, const char *guid)
 int ploop_di_remove_image(struct ploop_disk_images_data *di, const char *guid,
 		int renew_top_uuid, char **fname);
 int ploop_di_merge_image(struct ploop_disk_images_data *di, const char *guid);
+int ploop_di_can_merge_images(struct ploop_disk_images_data *di,
+		const char *ancestor_guid, const char *descendant_guid);
+int ploop_di_merge_images(struct ploop_disk_images_data *di,
+		const char *guid, int depth);
 void ploop_di_change_guid(struct ploop_disk_images_data *di, const char *guid, const char *new_guid);
 PL_EXT char *find_image_by_guid(struct ploop_disk_images_data *di, const char *guid);
 PL_EXT int find_snapshot_by_guid(struct ploop_disk_images_data *di, const char *guid);
 int ploop_add_image_entry(struct ploop_disk_images_data *di, const char *fname, const char *guid);
 int ploop_add_snapshot_entry(struct ploop_disk_images_data *di, const char *guid,
 		const char *parent_guid, int temporary);
+char *get_base_delta_uuid(struct ploop_disk_images_data *di);
 
 //balloon
 PL_EXT char *mntn2str(int mntn_type);

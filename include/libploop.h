@@ -144,7 +144,7 @@ struct ploop_merge_param {
 	int unused1;
 	int merge_all;
 	const char *guid;
-	const char *unused2;
+	const char *guid2; /* NULL, or an ancestor of above guid */
 	const char *new_delta;
 	char dummy[32];
 };

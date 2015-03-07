@@ -683,6 +683,51 @@ merge_done2:
 	return ret;
 }
 
+/* Only call after ploop_di_can_merge() returned 0 */
+int check_snapshot_mounts(struct ploop_disk_images_data *di,
+		const char *ancestor_guid, const char *descendant_guid)
+{
+	const char *guid = descendant_guid;
+
+	while (1) {
+		int idx, temp, ret;
+		const char *fname;
+
+		idx = find_snapshot_by_guid(di, guid);
+		if (idx == -1) {
+			ploop_err(0, "Can't find snapshot by guid %s",
+					guid);
+			return SYSEXIT_DISKDESCR;
+		}
+
+		fname = find_image_by_guid(di, guid);
+		if (!fname) {
+			ploop_err(0, "Can't find image by guid %s",
+					guid);
+			return SYSEXIT_DISKDESCR;
+		}
+
+		temp = di->snapshots[idx]->temporary;
+
+		ret = check_snapshot_mount(di, guid, fname, temp);
+		if (ret)
+			return ret;
+
+		if (!guidcmp(guid, ancestor_guid))
+			break;
+
+		guid = di->snapshots[idx]->parent_guid;
+		if (!strcmp(guid, NONE_UUID)) {
+			/* can't happen */
+			ploop_err(0, "Unexpectedly found %s to be base", guid);
+			return SYSEXIT_DISKDESCR;
+		}
+	}
+
+	return 0;
+}
+
+
 int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 		const char *guid, int merge_mode, const char *new_delta)
 {
@@ -929,6 +974,301 @@ err:
 	return ret;
 }
 
+/* Given a device and any two deltas, figure out if a merge between these
+ * is online or offline. For online case, fill in the merge parameters.
+ *
+ * Parameters:
+ *   dev	ploop device
+ *   anc_fname	ancestor (grand parent) image file name
+ *   dsc_fname	descentant (grand child) image file name
+ *
+ * Returns:
+ *   0 or SYSEXIT_* error
+ *
+ * Returned data:
+ *   *online		1 if this is online merge and the following data:
+ *   mi->start_level	start level to merge
+ *   mi->end_level	end level to merge
+ *   mi->raw		whether base delta is raw
+ *   mi->top_level	device top level
+ *   mi->merge_top	whether top level is affected
+ *   mi->names		list of deltas to merge, from descendant to ancestor
+ */
+static int prepare_online_merge(const char *dev,
+		const char *anc_fname, const char *dsc_fname,
+		int *online, struct merge_info *mi)
+{
+	struct merge_info info = {};
+	int i;
+	int anc_idx = -1, dsc_idx = -1; /* indexes in info */
+	int ret;
+
+	ret = get_delta_info(dev, &info);
+	if (ret)
+		return ret;
+
+	ret = SYSEXIT_FSTAT;
+	/* Try to find both images among deltas in running ploop */
+	for (i = 0; info.names[i] != NULL; i++) {
+		int r;
+
+		if (dsc_idx == -1) {
+			r = ploop_fname_cmp(info.names[i], dsc_fname);
+			if (r == -1)
+				goto out;
+			else if (r == 0) {
+				dsc_idx = i;
+				continue;
+			}
+		}
+		if (anc_idx == -1) {
+			r = ploop_fname_cmp(info.names[i], anc_fname);
+			if (r == -1)
+				goto out;
+			else if (r == 0) {
+				anc_idx = i;
+				continue;
+			}
+		}
+	}
+
+	/* Figure out if it's online, offline, or mixed case */
+	if (anc_idx != -1 && dsc_idx != -1) {
+		/* found both deltas: ONLINE */
+		int nelem, i, idx;
+
+		*online = 1;
+		nelem = get_list_size(info.names);
+		mi->start_level = nelem - anc_idx - 1;
+		mi->end_level = nelem - dsc_idx - 1;
+		if (mi->end_level <= mi->start_level) {
+			ploop_err(0, "Inconsistency: end_level <= start_level"
+					" (%d <= %d)",
+					mi->end_level, mi->start_level);
+			ret = SYSEXIT_PARAM;
+			goto out;
+		}
+
+		mi->names = calloc(mi->end_level - mi->start_level + 2,
+				sizeof(char *));
+		if (!mi->names) {
+			ploop_err(errno, "Can't malloc");
+			ret = SYSEXIT_MALLOC;
+			goto out;
+		}
+		/* Copy part of names we are interested in */
+		for (i = 0, idx = dsc_idx; idx <= anc_idx; idx++, i++)
+			mi->names[i] = strdup(info.names[idx]);
+
+		/* set the needed flags */
+		mi->raw = (mi->start_level == 0) ? info.raw : 0;
+		mi->top_level = info.top_level;
+		mi->merge_top = (info.top_level == mi->end_level);
+
+		ret = 0;
+	}
+	else if (anc_idx == -1 && dsc_idx == -1) {
+		/* no used deltas found: OFFLINE */
+		*online = 0;
+		ret = 0;
+	}
+	else {
+		/* Some deltas found: mixed case */
+		ploop_err(0, "Can't do mixed merge (some deltas "
+				"are online, some are offline)");
+		ret = SYSEXIT_PARAM;
+	}
+out:
+	ploop_free_array(info.names);
+
+	return ret;
+}
+
+/* Given two snapshot guids, fill in the merge info (for offline case)
+ *
+ * Parameters:
+ *   di			disk descriptor info
+ *   ancestor_guid	ancestor (grand parent, lower) guid
+ *   descendant_guid	descentant (grand child, higher) guid
+ *
+ * Returns:
+ *   0 or SYSEXIT_* error
+ *
+ * Returned data:
+ *   mi->raw		whether base delta is raw
+ *   mi->names		list of deltas to merge, from descentant to ancestor
+ */
+static int prepare_offline_merge(struct ploop_disk_images_data *di,
+		const char *ancestor_guid, const char *descendant_guid,
+		struct merge_info *mi)
+{
+	int ret = 0;
+
+	mi->names = make_images_list_by_guids(di,
+			descendant_guid, ancestor_guid, 1);
+	if (!mi->names)
+		/* error is printed by make_images_list_by_guids */
+		return SYSEXIT_SYS;
+
+	if (di->mode == PLOOP_RAW_MODE) {
+		int i;
+
+		/* We should set raw=1 if merging down to base image */
+		i = find_snapshot_by_guid(di, ancestor_guid);
+		if (i == -1) { /* should not ever happen */
+			ploop_err(0, "Can't find snapshot by guid %s",
+					ancestor_guid);
+			ret = SYSEXIT_PARAM;
+			goto out;
+		}
+		if (strcmp(di->snapshots[i]->parent_guid, NONE_UUID) == 0)
+			mi->raw = 1;
+	}
+
+out:
+	if (ret && mi->names)
+		ploop_free_array(mi->names);
+
+	return ret;
+}
+
+/* Merge multiple snapshots by a range of GUIDs */
+int ploop_merge_snapshots_by_guids(struct ploop_disk_images_data *di,
+		const char *descendant_guid, const char *ancestor_guid,
+		const char *new_delta)
+{
+	int i, ret;
+	int online;
+	char dev[64] = "";
+	struct merge_info info = {};
+	char conf[PATH_MAX];
+	char conf_tmp[PATH_MAX];
+
+	/* Can we merge these? */
+	ret = ploop_di_can_merge_images(di, ancestor_guid, descendant_guid);
+	if (ret)
+		return ret;
+
+	/* Is it online or offline merge? */
+	ret = ploop_find_dev_by_dd(di, dev, sizeof(dev));
+	if (ret == -1)
+		return SYSEXIT_SYS;
+	online = !ret;
+	if (online) {
+		const char *anc_fname, *dsc_fname;
+
+		anc_fname = find_image_by_guid(di, ancestor_guid);
+		dsc_fname = find_image_by_guid(di, descendant_guid);
+		/* Can be online, offline, or mixed */
+		ret = prepare_online_merge(dev, anc_fname, dsc_fname,
+				&online, &info);
+		if (ret)
+			return ret;
+	}
+
+	if (!online) {
+		ret = prepare_offline_merge(di,
+				ancestor_guid, descendant_guid, &info);
+		if (ret)
+			goto out;
+	}
+
+	/* FIXME: check if any snapshots are mounted */
+	ret = check_snapshot_mounts(di,
+			ancestor_guid, descendant_guid);
+	if (ret)
+		goto out;
+
+	i = get_list_size(info.names);
+	ploop_log(0, "%s merge of %d snapshot%s",
+			online ? "Online" : "Offline",
+			i - 1, i < 3 ? "" : "s");
+
+	/* First, merge in dd.xml (and do some extra checks */
+	ret = ploop_di_merge_images(di, descendant_guid, i - 1);
+	if (ret)
+		goto out;
+
+	get_disk_descriptor_fname(di, conf, sizeof(conf));
+	snprintf(conf_tmp, sizeof(conf_tmp), "%s.tmp", conf);
+	ret = ploop_store_diskdescriptor(conf_tmp, di);
+	if (ret)
+		goto out;
+
+	/* Do the actual merge */
+	ret = merge_image(online ? dev : NULL,
+			info.start_level, info.end_level,
+			info.raw, info.merge_top, info.names, new_delta);
+	if (ret)
+		goto out;
+
+	if (new_delta) {
+		/* Write new delta name to dd.xml, and remove the old file.
+		 * Note we can only write new delta now after merge_image()
+		 * as the file is created and we can use realpath() on it.
+		 */
+		int idx;
+		char *oldimg, *newimg;
+
+		newimg = realpath(new_delta, NULL);
+		if (!newimg) {
+			ploop_err(errno, "Error in realpath(%s)", new_delta);
+			ret = SYSEXIT_PARAM;
+			goto out;
+		}
+
+		idx = find_image_idx_by_guid(di, descendant_guid);
+		if (idx == -1) {
+			ploop_err(0, "Can't find image by uuid %s",
+					descendant_guid);
+			ret = SYSEXIT_PARAM;
+			goto out;
+		}
+
+		oldimg = di->images[idx]->file;
+		di->images[idx]->file = newimg;
+
+		ret = ploop_store_diskdescriptor(conf_tmp, di);
+		if (ret)
+			goto out;
+
+		ploop_log(0, "Removing %s", oldimg);
+		ret = unlink(oldimg);
+		if (ret) {
+			ploop_err(errno, "Can't remove %s", oldimg);
+			ret = SYSEXIT_UNLINK;
+		}
+
+		free(oldimg);
+	}
+
+	/* Put a new dd.xml */
+	if (rename(conf_tmp, conf)) {
+		ploop_err(errno, "Can't rename %s %s", conf_tmp, conf);
+		ret = SYSEXIT_RENAME;
+		goto out;
+	}
+
+	/* Remove images which were merged, i.e. all but the lowest one */
+	for (i = 0; info.names[i+1]; i++) {
+		const char *file = info.names[i];
+
+		ploop_log(0, "Removing %s", file);
+		if (unlink(file)) {
+			ploop_err(errno, "Can't remove %s", file);
+			ret = SYSEXIT_UNLINK;
+		}
+	}
+
+	if (ret == 0)
+		ploop_log(0, "Snapshots successfully merged");
+
+out:
+	ploop_free_array(info.names);
+
+	return ret;
+}
+
 int ploop_merge_snapshot(struct ploop_disk_images_data *di, struct ploop_merge_param *param)
 {
 	int ret = SYSEXIT_PARAM;
@@ -937,7 +1277,12 @@ int ploop_merge_snapshot(struct ploop_disk_images_data *di, struct ploop_merge_p
 	if (ploop_lock_dd(di))
 		return SYSEXIT_LOCK;
 
-	if (param->guid != NULL)
+	if (param->guid2 != NULL) {
+		/* merge multiple snapshots at once */
+		ret = ploop_merge_snapshots_by_guids(di, param->guid, param->guid2, param->new_delta);
+		goto unlock;
+	}
+	else if (param->guid != NULL)
 		guid = param->guid;
 	else if (!param->merge_all)
 		guid = di->top_guid;
@@ -945,12 +1290,11 @@ int ploop_merge_snapshot(struct ploop_disk_images_data *di, struct ploop_merge_p
 	if (guid != NULL) {
 		ret = ploop_merge_snapshot_by_guid(di, guid, PLOOP_MERGE_WITH_PARENT, param->new_delta);
 	} else {
-		while (di->nsnapshots != 1) {
-			ret = ploop_merge_snapshot_by_guid(di, di->top_guid, PLOOP_MERGE_WITH_PARENT, param->new_delta);
-			if (ret)
-				break;
-		}
+		/* merge all from top to base */
+		guid = get_base_delta_uuid(di);
+		ret =  ploop_merge_snapshots_by_guids(di, di->top_guid, guid, param->new_delta);
 	}
+unlock:
 	ploop_unlock_dd(di);
 
 	return ret;

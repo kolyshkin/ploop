@@ -1167,7 +1167,7 @@ int ploop_get_dev_by_mnt(const char *path, char *buf, int size)
 	return get_dev_by_mnt(path, 1, buf, size);
 }
 
-static char *get_base_delta_uuid(struct ploop_disk_images_data *di)
+char *get_base_delta_uuid(struct ploop_disk_images_data *di)
 {
 	int i;
 

@@ -509,3 +509,88 @@ int ploop_di_merge_image(struct ploop_disk_images_data *di, const char *guid)
 
 	return 0;
 }
+
+/* Do some trivial checks that snapshots between the two specified guids
+ * can be merged.
+ */
+int ploop_di_can_merge_images(struct ploop_disk_images_data *di,
+		const char *ancestor_guid, const char *descendant_guid)
+{
+	int anc_idx, dsc_idx, idx;
+	int found = 0;
+
+	/* Check that both guids specified exist */
+	anc_idx = find_snapshot_by_guid(di, ancestor_guid);
+	if (anc_idx == -1) {
+		ploop_err(0, "Can't find snapshot by uuid %s", ancestor_guid);
+		return SYSEXIT_PARAM;
+	}
+	dsc_idx = find_snapshot_by_guid(di, descendant_guid);
+	if (dsc_idx == -1) {
+		ploop_err(0, "Can't find snapshot by uuid %s", descendant_guid);
+		return SYSEXIT_PARAM;
+	}
+
+	/* Check for proper chain of snapshots in between, i.e.
+	 * descendant -> parent -> .... -> ancestor
+	 */
+	idx = dsc_idx;
+	while (!found) {
+		const char *p_guid;
+		int num_ch;
+
+		p_guid = di->snapshots[idx]->parent_guid;
+		if (guidcmp(p_guid, ancestor_guid) == 0)
+			found = 1;
+		else if (guidcmp(p_guid, NONE_UUID) == 0)
+			break;
+
+		idx = find_snapshot_by_guid(di, p_guid);
+		if (idx == -1) {
+			ploop_err(0, "Inconsistency detected: snapshot %s "
+					"can't be found", p_guid);
+			return SYSEXIT_DISKDESCR;
+		}
+
+		/* Check our parent don't have any other children */
+		num_ch = ploop_get_child_count_by_uuid(di, p_guid);
+		if (num_ch > 1) {
+			ploop_err(0, "Unable to merge to %s: "
+					"it has %d children",
+					p_guid, num_ch);
+			return SYSEXIT_PARAM;
+		}
+	}
+
+	if (!found) {
+		ploop_err(0, "Can't find %s to be an ancestor of %s",
+				ancestor_guid, descendant_guid);
+		return SYSEXIT_PARAM;
+	}
+
+	if (idx != anc_idx) { /* should never happen */
+		ploop_err(0, "Inconsistency: idx != anc_idx");
+		return SYSEXIT_SYS;
+	}
+
+	return 0;
+}
+
+/* Only call this function if ploop_di_can_merge_images() returned 0 */
+int ploop_di_merge_images(struct ploop_disk_images_data *di,
+		const char *guid, int depth)
+{
+	/* As guid is propagated to the previous level,
+	 * we just need to call di_merge_image repeatedly
+	 * using the same guid.
+	 */
+	while (depth--) {
+		int ret;
+
+		ret = ploop_di_merge_image(di, guid);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
