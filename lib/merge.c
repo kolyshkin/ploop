@@ -683,63 +683,6 @@ merge_done2:
 	return ret;
 }
 
-static const char *get_devs_str(char **devs, char *buf, int size)
-{
-	char **p;
-	char *sp = buf;
-	char *ep = buf + size;
-
-	for (p = devs; *p != NULL; p++) {
-		sp += snprintf(sp, ep - sp, "%s ", *p);
-		if (sp >= ep)
-			break;
-	}
-	return buf;
-}
-
-int check_snapshot_mount(struct ploop_disk_images_data *di,
-		int temporary, const char *parent_fname,
-		const char *child_fname, const char *child_guid)
-{
-	int ret = 0;
-	char **devs, **p;
-	char buf[512];
-
-	/* Check if upper (child) delta that will be merged and
-	 * destroyed is mounted
-	 */
-	if (guidcmp(child_guid, di->top_guid) != 0 &&
-			ploop_get_dev_by_delta(di->images[0]->file,
-				child_fname, NULL, &devs) == 0)
-	{
-		ploop_err(0, "Snapshot is busy by device(s): %s",
-				get_devs_str(devs, buf, sizeof(buf)));
-		ret = SYSEXIT_EBUSY;
-		goto out;
-	}
-
-	/* check if snapshot (parent) delta is mounted */
-	if (ploop_get_dev_by_delta(di->images[0]->file,
-			parent_fname, NULL, &devs) == 0)
-	{
-		/* unmount temporary snapshot */
-		if (temporary) {
-			for (p = devs; *p != NULL; p++) {
-				ret = ploop_umount(*p, NULL);
-				if (ret)
-					break;
-			}
-		} else {
-			ploop_err(0, "Snapshot is busy by device(s): %s",
-					get_devs_str(devs, buf, sizeof(buf)));
-			ret = SYSEXIT_EBUSY;
-		}
-	}
-out:
-	ploop_free_array(devs);
-	return ret;
-}
-
 int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 		const char *guid, int merge_mode, const char *new_delta)
 {
@@ -759,8 +702,7 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	int merge_top = 0;
 	int raw = 0;
 	int online = 0;
-	int snap_idx;
-	int temporary = 0;
+	int parent_idx, child_idx; /* parent and child snapshot ids */
 	struct merge_info info = {};
 	int i, nelem;
 
@@ -796,14 +738,20 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 				parent_guid);
 		goto err;
 	}
-	snap_idx = find_snapshot_by_guid(di, parent_guid);
-	if (snap_idx == -1) {
+	parent_idx = find_snapshot_by_guid(di, parent_guid);
+	if (parent_idx == -1) {
 		ploop_err(0, "Can't find snapshot by uuid %s",
 				parent_guid);
 
 		goto err;
 	}
-	temporary = di->snapshots[snap_idx]->temporary;
+	child_idx = find_snapshot_by_guid(di, child_guid);
+	if (child_idx == -1) {
+		ploop_err(0, "Can't find snapshot by uuid %s",
+				child_guid);
+
+		goto err;
+	}
 
 	nelem = ploop_get_child_count_by_uuid(di, parent_guid);
 	if (nelem > 1) {
@@ -868,7 +816,7 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 		end_level = 1;
 		/* Only base image could be in RAW format */
 		if (di->mode == PLOOP_RAW_MODE &&
-				!guidcmp(di->snapshots[snap_idx]->parent_guid, NONE_UUID))
+				!guidcmp(di->snapshots[parent_idx]->parent_guid, NONE_UUID))
 			raw = 1;
 	}
 
@@ -884,8 +832,12 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	}
 	names[2] = NULL;
 
-	ret = check_snapshot_mount(di, temporary, parent_fname,
-			child_fname, child_guid);
+	ret = check_snapshot_mount(di, parent_guid, parent_fname,
+			di->snapshots[parent_idx]->temporary);
+	if (ret)
+		goto err;
+	ret = check_snapshot_mount(di, child_guid, child_fname,
+			di->snapshots[child_idx]->temporary);
 	if (ret)
 		goto err;
 
@@ -965,7 +917,8 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 
 	if (ret == 0)
 		ploop_log(0, "ploop %s %s has been successfully merged",
-				get_snap_str(temporary), parent_guid);
+				get_snap_str(di->snapshots[parent_idx]->temporary),
+				parent_guid);
 
 err:
 	for (i = 0; names[i] != NULL; i++)
