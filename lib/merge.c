@@ -965,7 +965,7 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 
 	if (ret == 0)
 		ploop_log(0, "ploop %s %s has been successfully merged",
-				get_snap_str(temporary), guid);
+				get_snap_str(temporary), parent_guid);
 
 err:
 	for (i = 0; names[i] != NULL; i++)
