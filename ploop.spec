@@ -1,7 +1,7 @@
 %define _incdir /usr/include/ploop
 Summary: ploop tools
 Name: ploop
-Version: 1.12.1
+Version: 1.13
 %define rel 1
 Release: %{rel}%{?dist}
 Group: Applications/System
@@ -92,6 +92,55 @@ Headers and a static version of ploop library
 %attr(644,root,root) %{_incdir}/dynload.h
 
 %changelog
+* Mon Apr 13 2015 Kir Kolyshkin <kir@openvz.org> 1.13-1
+- New functionality:
+-- ploop_merge_snapshot(): add merge to new delta ability
+-- Logging to PLOOP_LOG_FILE (if variable is defined during compilation)
+-- ploop restore-descriptor: create dd.xml by image (single image only)
+-- ploop replace: add -k, --keep-name to keep the replaced delta file name
+-- ploop replace: implement offline replace
+-- snapshot-delete: introduce specific SYSEXIT_NOSNAP error
+-- Alternative (incompatible) implementation of ploop copy (C and Python API)
+- Fixes:
+-- ploop_replace_image(): fix wrt level
+-- ploop grow: update size in DiskDescriptor.xml after growing
+-- normalize_image_name(): fix for a corner case
+-- ploop_replace_image(): always unlock dd.xml
+-- {mount,umount}.ploop: fixes for filenames with spaces, tabs etc.
+-- umount.ploop: fix mtab removal (#3164)
+-- umount.ploop: fix for file names with a semicolon
+-- scripts/mount.ploop: don't hardcode paths to modprobe and readlink
+-- ploop_umount(): don't return -1, use SYSEXIT_*
+-- ploop_merge_snapshot_by_guid(): fix error message, don't print (null)
+-- ploop tsnapshot(): fix usage
+-- grow_lower_delta(): fix a memory leak
+-- ploop_merge_snapshot_by_guid(): fix error message
+-- check_snapshot_mount(): add is_device_inuse() check
+- Improvements:
+-- print_sys_block_ploop(): print less info
+-- Remove delta_fops abstraction layer
+-- ploop merge: obsolete/disable form with DD.xml (use snapshot-merge)
+-- find_level_by_delta(): rework/improve
+-- ploop_switch_snapshot(): rm non-const cast
+-- local_delta_open(): make first arg const
+-- [style] ploop_replace_image: reuse oldfile var
+-- merge_image(): document the function
+-- ploop_di_merge_image(): remove last argument
+-- Rename get_child_by_uuid() to find_child_by_guid()
+-- ploop_merge_snapshot_by_guid(): untangle MERGE_WITH_{PARENT,CHILD} mess
+-- ploop_merge_snapshot_by_guid: fix ending message
+-- Rework check_snapshot_mount()
+-- ploop_di_merge_image: fix error messages
+-- ploop_merge_snapshot_by_guid(): fix error message
+- Documentation:
+-- ploop tool: usage formatting fixes
+-- ploop(8): expand description of snapshot-merge
+- Build system:
+-- ploop.spec: no perms for symlink
+-- Makefile.inc: add VERSION and RELEASE vars to specify package version
+-- setver.sh: modify to use VERSION/RELEASE from Makefile.inc
+-- setver.sh: add -o, --oldpackage flag
+
 * Thu Jan  1 2015 Kir Kolyshkin <kir@openvz.org> 1.12.2-1
 - Fixes:
 -- ploop balloon discard: fix wrt 042stab10x kernel (#3156)
