@@ -94,7 +94,7 @@ Headers and a static version of ploop library
 %changelog
 * Mon Apr 13 2015 Kir Kolyshkin <kir@openvz.org> 1.13-1
 - New functionality:
--- ploop_merge_snapshot(): add merge to new delta ability
+-- snapshot-merge: add -n, merge to new delta ability
 -- Logging to PLOOP_LOG_FILE (if variable is defined during compilation)
 -- ploop restore-descriptor: create dd.xml by image (single image only)
 -- ploop replace: add -k, --keep-name to keep the replaced delta file name
@@ -120,6 +120,7 @@ Headers and a static version of ploop library
 -- print_sys_block_ploop(): print less info
 -- Remove delta_fops abstraction layer
 -- ploop merge: obsolete/disable form with DD.xml (use snapshot-merge)
+-- ploop snapshot-merge: fix/improve message about merged deltas
 -- find_level_by_delta(): rework/improve
 -- ploop_switch_snapshot(): rm non-const cast
 -- local_delta_open(): make first arg const
@@ -135,6 +136,9 @@ Headers and a static version of ploop library
 - Documentation:
 -- ploop tool: usage formatting fixes
 -- ploop(8): expand description of snapshot-merge
+-- ploop(8): describe replace -k, --keep-name option
+-- ploop(8): describe restore-descriptor command
+-- ploop(8): describe snapshot-merge -n option
 - Build system:
 -- ploop.spec: no perms for symlink
 -- Makefile.inc: add VERSION and RELEASE vars to specify package version
