@@ -937,8 +937,9 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	if (ret)
 		goto err;
 
-	ploop_log(0, "%sline merge %s -> %s%s",
+	ploop_log(0, "%sline %s merge %s -> %s%s",
 			online ? "On": "Off",
+			get_snap_str(di->snapshots[parent_idx]->temporary),
 			child_guid, parent_guid,
 			raw ? " (raw)" : "");
 
@@ -948,6 +949,11 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	ret = ploop_di_merge_image(di, child_guid);
 	if (ret)
 		goto err;
+	/* We can't use parent_guid and child_guid below, since one of them
+	 * is already free()'d in ploop_di_merge_image().
+	 * Hint the compiler/static analyser to error out if they are used.
+	 */
+	parent_guid = child_guid = NULL;
 
 	get_disk_descriptor_fname(di, conf, sizeof(conf));
 	snprintf(conf_tmp, sizeof(conf_tmp), "%s.tmp", conf);
@@ -1013,9 +1019,9 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	}
 
 	if (ret == 0)
-		ploop_log(0, "ploop %s %s has been successfully merged",
-				get_snap_str(di->snapshots[parent_idx]->temporary),
-				parent_guid);
+		ploop_log(0, "ploop snapshot has been successfully merged");
+	else
+		ploop_err(0, "failed to merge ploop snapshot");
 
 err:
 	for (i = 0; names[i] != NULL; i++)
