@@ -852,7 +852,8 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	if (nelem > 1) {
 		ploop_err(0, "Can't merge to snapshot %s: it has %d children",
 				parent_guid, nelem);
-		return SYSEXIT_PARAM;
+		ret = SYSEXIT_PARAM;
+		goto err;
 	}
 
 	ret = ploop_find_dev_by_dd(di, dev, sizeof(dev));
