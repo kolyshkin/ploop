@@ -727,6 +727,56 @@ int check_snapshot_mounts(struct ploop_disk_images_data *di,
 	return 0;
 }
 
+/* Logs a line showing deltas to merge and the merge destination,
+ * that looks something like these:
+ *
+ *	Merging image: delta_file -> parent_delta_file
+ *
+ *	Merging images: delta_file_1 file_2 file_3 -> (new) new_delta
+ */
+static void log_merge_images_info(struct ploop_disk_images_data *di,
+		char **names, const char *new_delta)
+{
+	char basedir[PATH_MAX];
+	char imglist[LOG_BUF_SIZE];
+	char merged_image[PATH_MAX];
+	int i, pos = 0, nimg;
+
+	get_basedir(di->runtime->xml_fname, basedir, sizeof(basedir));
+
+	nimg = get_list_size(names) - 1;
+	if (new_delta) {
+		nimg++;
+		// merged_image = new_delta;
+		normalize_image_name(basedir, new_delta,
+				merged_image, sizeof(merged_image));
+	}
+	else {
+		// merged_image = names[nimg];
+		normalize_image_name(basedir, names[nimg],
+				merged_image, sizeof(merged_image));
+	}
+
+	for (i = 0; i < nimg; i++) {
+		int n;
+		char img[PATH_MAX];
+
+		normalize_image_name(basedir, names[i], img, sizeof(img));
+		n = snprintf(imglist + pos, sizeof(imglist) - pos, "%s ", img);
+		if (n <= 0)
+			// error?
+			break;
+		pos += n;
+		if (pos >= sizeof(imglist))
+			// output truncated!
+			break;
+	}
+
+	ploop_log(0, "Merging image%s: %s-> %s%s",
+			nimg > 1 ? "s" : "",
+			imglist,
+			new_delta ? "(new) " : "", merged_image);
+}
 
 int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 		const char *guid, int merge_mode, const char *new_delta)
@@ -886,11 +936,12 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 	if (ret)
 		goto err;
 
-	ploop_log(0, "%sline merge uuid %s -> %s image %s -> %s %s",
+	ploop_log(0, "%sline merge %s -> %s%s",
 			online ? "On": "Off",
 			child_guid, parent_guid,
-			names[0], names[1],
-			raw ? "raw" : "");
+			raw ? " (raw)" : "");
+
+	log_merge_images_info(di, names, new_delta);
 
 	/* make validation before real merge */
 	ret = ploop_di_merge_image(di, child_guid);
@@ -1183,6 +1234,7 @@ int ploop_merge_snapshots_by_guids(struct ploop_disk_images_data *di,
 	ploop_log(0, "%s merge of %d snapshot%s",
 			online ? "Online" : "Offline",
 			i - 1, i < 3 ? "" : "s");
+	log_merge_images_info(di, info.names, new_delta);
 
 	/* First, merge in dd.xml (and do some extra checks */
 	ret = ploop_di_merge_images(di, descendant_guid, i - 1);
