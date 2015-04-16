@@ -3709,6 +3709,10 @@ int check_snapshot_mount(struct ploop_disk_images_data *di,
 	char **devs, **p;
 	char buf[512];
 
+	/* Don't check top delta */
+	if (guidcmp(guid, di->top_guid) == 0)
+		return 0;
+
 	ret = ploop_get_dev_by_delta(di->images[0]->file,
 			fname, NULL, &devs);
 	if (ret == 1)
