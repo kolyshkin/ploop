@@ -1,5 +1,5 @@
 NAME=ploop
-VERSION=1.13
+VERSION=1.13.1
 RELEASE=
 
 CC=gcc
