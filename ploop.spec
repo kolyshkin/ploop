@@ -1,7 +1,7 @@
 %define _incdir /usr/include/ploop
 Summary: ploop tools
 Name: ploop
-Version: 1.13.1
+Version: 1.13.2
 %define rel 1
 Release: %{rel}%{?dist}
 Group: Applications/System
@@ -92,10 +92,11 @@ Headers and a static version of ploop library
 %attr(644,root,root) %{_incdir}/dynload.h
 
 %changelog
-* Thu Apr 16 2015 Kir Kolyshkin <kir@openvz.org> 1.13.1-1
-* Fix online top delta merge/delete (#3215)
-* Fix messages and use-after-free in ploop_merge_snapshot_by_guid()
-* ploop(8): document SYSEXIT_NOSNAP
+* Thu Apr 16 2015 Kir Kolyshkin <kir@openvz.org> 1.13.2-1
+- Fix online top delta merge/delete (#3215)
+- Fix messages and use-after-free in ploop_merge_snapshot_by_guid()
+- ploop(8): document SYSEXIT_NOSNAP
+- ploop.spec: complete 1.13 changelog
 
 * Mon Apr 13 2015 Kir Kolyshkin <kir@openvz.org> 1.13-1
 - New functionality:
