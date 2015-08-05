@@ -78,6 +78,7 @@ fi
 %package devel
 Summary: Headers for development with ploop library
 Group: Applications/System
+Requires: pkgconfig
 %description devel
 Headers and a static version of ploop library
 
@@ -85,6 +86,7 @@ Headers and a static version of ploop library
 %defattr(-,root,root)
 %dir %{_incdir}
 %attr(644,root,root) %{_libdir}/libploop.a
+%{_libdir}/pkgconfig/ploop.pc
 %{_libdir}/libploop.so
 %attr(644,root,root) %{_incdir}/libploop.h
 %attr(644,root,root) %{_incdir}/ploop_if.h
