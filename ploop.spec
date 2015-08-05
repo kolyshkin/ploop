@@ -54,7 +54,7 @@ Parallels loopback (ploop) block device API library
 
 %files lib
 %defattr(-,root,root)
-%attr(755,root,root) %{_libdir}/libploop.so.*
+%{_libdir}/libploop.so.*
 %dir /var/lock/ploop
 %{_prefix}/lib/tmpfiles.d/%{name}.conf
 
