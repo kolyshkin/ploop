@@ -171,7 +171,7 @@ Headers and a static version of ploop library
 -- snapshot-switch: don't show ENOENT remove error
 -- ploop_is_large_disk_supported(): check ploop module first
 
-* Thu Jul 29 2014 Kir Kolyshkin <kir@openvz.org> 1.12-1
+* Tue Jul 29 2014 Kir Kolyshkin <kir@openvz.org> 1.12-1
 - New functionality:
 -- ploop copy: implement two-way protocol
 -- ploop copy send: implement async read/send
