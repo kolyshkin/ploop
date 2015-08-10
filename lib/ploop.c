@@ -895,11 +895,11 @@ static int do_ioctl(int fd, int req)
 {
 	int i, ret;
 
-	for (i = 0; i < 60; i++) {
+	for (i = 0; i < 10; i++) {
 		ret = ioctl(fd, req, 0);
 		if (ret == 0 || (ret == -1 && errno != EBUSY))
 			return ret;
-		sleep(1);
+		usleep(200000); // 0.2 seconds
 	}
 	return ret;
 }
