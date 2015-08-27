@@ -106,7 +106,7 @@ static int plooptool_init(int argc, char **argv)
 		.fmt_version	= PLOOP_FMT_UNDEFINED,
 	};
 	static struct option long_opts[] = {
-		{ "nolazy", required_argument, 0, 'n' },
+		{ "nolazy", no_argument, 0, 'n' },
 		{},
 	};
 
