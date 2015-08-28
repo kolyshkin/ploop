@@ -893,15 +893,22 @@ int ploop_getdevice(int *minor)
 /* Workaround for bug #PCLIN-30116 */
 static int do_ioctl(int fd, int req)
 {
-	int i, ret;
+	useconds_t total = 0;
+	useconds_t wait = 15000; // initial wait time 0.015s
+	useconds_t maxwait = 15000000; // max wait time per iteration 15s
+	const useconds_t maxtotal = 60000000; // max total wait time 60s
 
-	for (i = 0; i < 10; i++) {
-		ret = ioctl(fd, req, 0);
+	do {
+		int ret = ioctl(fd, req, 0);
 		if (ret == 0 || (ret == -1 && errno != EBUSY))
 			return ret;
-		usleep(200000); // 0.2 seconds
-	}
-	return ret;
+		if (total > maxtotal)
+			return ret;
+		usleep(wait);
+		total += wait;
+		if (wait < maxwait)
+			wait *= 2;
+	} while (1);
 }
 
 int print_output(int level, const char *cmd, const char *arg)
