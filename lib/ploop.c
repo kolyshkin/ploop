@@ -890,12 +890,15 @@ int ploop_getdevice(int *minor)
 	return fd;
 }
 
-/* Workaround for bug #PCLIN-30116 */
+/* Device might be used by blkid binary (see #PSBM-10590), in such case
+ * kernel returns EBUSY and we need to retry ioctl() after some delay.
+ * Start with a small delay, increasing it exponentially.
+ */
 static int do_ioctl(int fd, int req)
 {
 	useconds_t total = 0;
-	useconds_t wait = 15000; // initial wait time 0.015s
-	useconds_t maxwait = 15000000; // max wait time per iteration 15s
+	useconds_t wait = 10000; // initial wait time 0.01s
+	useconds_t maxwait = 500000; // max wait time per iteration 0.5s
 	const useconds_t maxtotal = 60000000; // max total wait time 60s
 
 	do {
@@ -906,8 +909,9 @@ static int do_ioctl(int fd, int req)
 			return ret;
 		usleep(wait);
 		total += wait;
-		if (wait < maxwait)
-			wait *= 2;
+		wait *= 2;
+		if (wait > maxwait)
+			wait = maxwait;
 	} while (1);
 }
 
