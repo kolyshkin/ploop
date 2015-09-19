@@ -1,7 +1,7 @@
 %define _incdir /usr/include/ploop
 Summary: ploop tools
 Name: ploop
-Version: 1.13.2
+Version: 1.14
 %define rel 1
 Release: %{rel}%{?dist}
 Group: Applications/System
@@ -94,6 +94,38 @@ Headers and a static version of ploop library
 %attr(644,root,root) %{_incdir}/dynload.h
 
 %changelog
+* Fri Sep 18 2015 Kir Kolyshkin <kir@openvz.org> 1.14-1
+- New functionality:
+-- ploop init: add --nolazy
+-- ploop snapshot-merge: add -U
+-- ploop_create_param: add flags, define NOLAZY flag
+-- do_ioctl(): run lsof on EBUSY
+-- Add pkg-config support
+- Fixes:
+-- Fix restore-descriptor for raw images
+-- ploop_get_top_delta_fname(): use ploop_lock(), return SYSEXIT_*
+-- Fix POWER compilation
+-- ploop_create_image(): do not return -1, use SYSEXIT_* code
+-- ploop snapshot-switch: fix SIGSEGV parsing cmdline
+-- is_xml_fname(): fix a potential SIGSEGV
+- Improvements:
+-- do_ioctl(): implement exponential wait time
+-- mount.ploop: check if mtab is not symlink
+-- ploop_replace_image: use mkstemp() not mktemp()
+-- print_sys_block_ploop(): more compact output
+-- ploop_umount_image(): simplify unlock on return
+-- make_fs(): don't hardcode argv index
+-- read_diskdescriptor(): remove
+-- tools/Makefile: fix LDLIBS to avoid overlinking
+- Documentation:
+-- ploop(8): document --nolazy flag for ploop init
+-- ploop(8): document -U for ploop snapshot-merge
+-- include/libploop.h: document mount and snapshot switch params
+- Build system:
+-- Makefiles: move -lpthread to the proper place
+-- ploop.spec: fix a date in %changelog
+-- ploop.spec: no %attr for symlink
+
 * Thu Apr 16 2015 Kir Kolyshkin <kir@openvz.org> 1.13.2-1
 - Fix online top delta merge/delete (#3215)
 - Fix messages and use-after-free in ploop_merge_snapshot_by_guid()
