@@ -122,7 +122,7 @@ ploop \- ploop device management utility
 .I DiskDescriptor.xml
 .YS
 .SY ploop\ snapshot-merge
-.OP -u uuid\fR\ |\ \fB-A
+.OP -u uuid\fR\ [\fB-U\fR\ \fIuuid2\fR]\ |\ \fB-A
 .OP -n new_delta
 .I DiskDescriptor.xml
 .YS
@@ -583,14 +583,17 @@ the \fIuuid\fR specified). All snapshots having the lost one as a parent
 are updated to have the \fIuuid\fR as its parent.
 
 .SY ploop\ snapshot-merge
-.OP -u uuid\fR\ |\ \fB-A
+.OP -u uuid\fR\ [\fB-U\fR\ \fIuuid2\fR]\ |\ \fB-A
 .OP -n new_delta
 .I DiskDescriptor.xml
 .YS
 
 .IP "\fB-u\fR \fIuuid\fR"
-Specify a snapshot \fIuuid\fR to merge.
+Specify a single snapshot \fIuuid\fR to merge.
 If this option is not specified, the top delta will be used.
+.IP "\fB-U\fR \fIuuid2\fR"
+Together with \fB-u\fR \fIuuid\fR, specify that all snapshots in the range
+\fIuuid\fR...\fIuuid2\fR are to be merged.
 .IP \fB-A\fR
 Merge all snapshots down to base delta. If some snapshots have more than
 a single child, they will be impossible to merge.

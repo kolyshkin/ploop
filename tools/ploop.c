@@ -799,8 +799,9 @@ static int plooptool_snapshot_delete(int argc, char **argv)
 
 static void usage_snapshot_merge(void)
 {
-	fprintf(stderr, "Usage: ploop snapshot-merge [-u UUID | -A] [-n DELTA] DiskDescriptor.xml\n"
+	fprintf(stderr, "Usage: ploop snapshot-merge [-u UUID [-U UUID2] | -A] [-n DELTA] DiskDescriptor.xml\n"
 			"       -u UUID       snapshot to merge (top delta if not specified)\n"
+			"       -U UUID2      all snapshots in UUID..UUID2 range\n"
 			"       -n DELTA      new delta file to merge to\n");
 }
 
@@ -809,11 +810,16 @@ static int plooptool_snapshot_merge(int argc, char ** argv)
 	int i, ret;
 	struct ploop_merge_param param = {};
 
-	while ((i = getopt(argc, argv, "u:n:A")) != EOF) {
+	while ((i = getopt(argc, argv, "u:U:n:A")) != EOF) {
 		switch (i) {
 		case 'u':
 			param.guid = parse_uuid(optarg);
 			if (!param.guid)
+				return SYSEXIT_PARAM;
+			break;
+		case 'U':
+			param.guid2 = parse_uuid(optarg);
+			if (!param.guid2)
 				return SYSEXIT_PARAM;
 			break;
 		case 'A':
