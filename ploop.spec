@@ -1,7 +1,7 @@
 %define _incdir /usr/include/ploop
 Summary: ploop tools
 Name: ploop
-Version: 1.14
+Version: 1.14.1
 %define rel 1
 Release: %{rel}%{?dist}
 Group: Applications/System
@@ -94,6 +94,10 @@ Headers and a static version of ploop library
 %attr(644,root,root) %{_incdir}/dynload.h
 
 %changelog
+* Mon Sep 21 2015 Kir Kolyshkin <kir@openvz.org> 1.14.1-1
+- Fixes:
+-- if mke2fs fails, retry it without -Elazy_journal_init (#OVZ-6539)
+
 * Fri Sep 18 2015 Kir Kolyshkin <kir@openvz.org> 1.14-1
 - New functionality:
 -- ploop init: add --nolazy
