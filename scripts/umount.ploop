@@ -8,7 +8,6 @@
 
 PLOOP="ploop"
 MOUNT_POINT=""
-PLOOP_DEV=""
 MTAB="/etc/mtab"
 DESCRIPTOR="DiskDescriptor.xml"
 
