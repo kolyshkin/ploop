@@ -112,7 +112,7 @@ MF_V=$(awk -F = '($1 == "VERSION") { print $2; }' $MAKEFILE)
 MF_R=$(awk -F = '($1 == "RELEASE") { print $2; }' $MAKEFILE)
 GIT_R_MF="-$GIT_RT"
 test "$GIT_RT" = "1" && GIT_R_MF=""
-if test "$GIT_V" != "$MF_V" -o "$GIT_R_MF" != "MF_R"; then
+if test "$GIT_V" != "$MF_V" -o "$GIT_R_MF" != "$MF_R"; then
 	test -z "$verbose" || echo "Changing $MAKEFILE:"
 	# VERSION=1.12
 	# RELEASE=
