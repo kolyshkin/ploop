@@ -409,7 +409,6 @@ int is_valid_blocksize(__u32 blocksize);
 int run_prg(char *const argv[]);
 #define HIDE_STDOUT	1 << 0	/* hide process' stdout */
 #define HIDE_STDERR	1 << 1	/* hide process' stderr */
-#define HIDE_NZ_EXIT	1 << 2	/* hide error about non-zero exit code */
 int run_prg_rc(char *const argv[], int hide_mask, int *rc);
 int p_memalign(void **memptr, size_t alignment, size_t size);
 PL_EXT int guidcmp(const char *p1, const char *p2);

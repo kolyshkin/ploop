@@ -320,8 +320,7 @@ int run_prg_rc(char *const argv[], int hide_mask, int *rc)
 		}
 		if (ret == 0)
 			return 0;
-		if (! (hide_mask & HIDE_NZ_EXIT))
-			ploop_err(0, "Command %s exited with code %d", cmd, ret);
+		ploop_err(0, "Command %s exited with code %d", cmd, ret);
 	} else if (WIFSIGNALED(status)) {
 		ploop_err(0, "Command %s received signal %d",
 				cmd, WTERMSIG(status));

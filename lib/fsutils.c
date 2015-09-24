@@ -144,10 +144,12 @@ int make_fs(const char *device, const char *fstype, unsigned int fsblocksize,
 	 * visible, so if there's any error it will be shown during
 	 * the second run.
 	 */
-	int hide = HIDE_STDERR | HIDE_NZ_EXIT;
+	int hide = HIDE_STDERR;
 	int retry = 1;
+	int rc;
+
 run:
-	if (run_prg_rc(argv, hide, NULL) != 0) {
+	if (run_prg_rc(argv, hide, &rc) != 0 || rc != 0) {
 		if (!retry)
 			return SYSEXIT_MKFS;
 
