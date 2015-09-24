@@ -127,7 +127,8 @@ int make_fs(const char *device, const char *fstype, unsigned int fsblocksize,
 	max_online_resize = PLOOP_MAX_FS_SIZE / fsblocksize;
 	if (max_online_resize > (uint32_t)~0)
 		max_online_resize = (uint32_t)~0;
-	snprintf(ext_opts, sizeof(ext_opts), "-Eresize=%" PRIu64 ",lazy_itable_init=%d,lazy_journal_init=%d",
+	snprintf(ext_opts, sizeof(ext_opts), "-Eresize=%" PRIu64
+			",lazy_itable_init=%d,lazy_journal_init=%d",
 			max_online_resize, lazy, lazy);
 	argv[i++] = ext_opts;
 	/* Set the journal size to 128M to allow online resize up to 16T
@@ -139,8 +140,8 @@ int make_fs(const char *device, const char *fstype, unsigned int fsblocksize,
 	argv[i++] = NULL;
 
 	/* If running for the first time, hide stderr to not show the
-	 * error about lazy_itable_init. Note that in case of any error
-	 * we rerun it again without lazy_itable_init, but with stderr
+	 * error about lazy_journal_init. Note that in case of any error
+	 * we rerun it again without lazy_journal_init, but with stderr
 	 * visible, so if there's any error it will be shown during
 	 * the second run.
 	 */
