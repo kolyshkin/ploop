@@ -1198,7 +1198,7 @@ static void defrag_complete(const char *dev)
 	snprintf(cmdline, sizeof(cmdline), "/proc/%d/cmdline", pid);
 	fp = fopen(cmdline, "r");
 	if (fp == NULL) {
-		// no process with such pidr, possible stale file
+		// no process with such pid, possible stale file
 		goto stale;
 	}
 
