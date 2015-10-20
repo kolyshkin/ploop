@@ -127,9 +127,8 @@ int make_fs(const char *device, const char *fstype, unsigned int fsblocksize,
 	max_online_resize = PLOOP_MAX_FS_SIZE / fsblocksize;
 	if (max_online_resize > (uint32_t)~0)
 		max_online_resize = (uint32_t)~0;
-	snprintf(ext_opts, sizeof(ext_opts), "-Eresize=%" PRIu64
-			",lazy_itable_init=%d,lazy_journal_init=%d",
-			max_online_resize, lazy, lazy);
+	snprintf(ext_opts, sizeof(ext_opts), "-Elazy_itable_init=%d,resize=%" PRIu64,
+			lazy, max_online_resize);
 	argv[i++] = ext_opts;
 	/* Set the journal size to 128M to allow online resize up to 16T
 	 * independly on the initial image size
@@ -139,32 +138,8 @@ int make_fs(const char *device, const char *fstype, unsigned int fsblocksize,
 	argv[i++] = part_device;
 	argv[i++] = NULL;
 
-	/* If running for the first time, hide stderr to not show the
-	 * error about lazy_journal_init. Note that in case of any error
-	 * we rerun it again without lazy_journal_init, but with stderr
-	 * visible, so if there's any error it will be shown during
-	 * the second run.
-	 */
-	int hide = HIDE_STDERR;
-	int retry = 1;
-	int rc;
-
-run:
-	if (run_prg_rc(argv, hide, &rc) != 0 || rc != 0) {
-		if (!retry)
-			return SYSEXIT_MKFS;
-
-		/* Might be older mke2fs that doesn't yet support option
-		 * lazy_journal_init, so let's retry without (#OVZ-6539).
-		 */
-		char *comma = strrchr(ext_opts, ',');
-		if (!comma) /* can't happen */
-			return SYSEXIT_MKFS;
-		*comma = '\0';
-		retry = 0;
-		hide = 0;
-		goto run;
-	}
+	if (run_prg(argv))
+		return SYSEXIT_MKFS;
 
 	i = 0;
 	argv[i++] = get_prog(tune2fs_progs);
