@@ -3567,6 +3567,7 @@ int copy_delta(const char *src, const char *dst)
 		/* realloc */
 		cluster = S2B(vh->m_Sectors);
 		free(buf);
+		buf = NULL;
 		if (p_memalign(&buf, 4096, cluster)) {
 			ret = SYSEXIT_MALLOC;
 			goto out;
@@ -3609,8 +3610,7 @@ int copy_delta(const char *src, const char *dst)
 
 	ret = 0;
 out:
-	if (buf)
-		free(buf);
+	free(buf);
 	if (sfd >= 0)
 		close(sfd);
 	if (dfd >= 0)
