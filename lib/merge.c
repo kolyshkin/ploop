@@ -779,7 +779,7 @@ static void log_merge_images_info(struct ploop_disk_images_data *di,
 }
 
 int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
-		const char *guid, int merge_mode, const char *new_delta)
+		const char *guid, const char *new_delta)
 {
 	char conf[PATH_MAX];
 	char conf_tmp[PATH_MAX];
@@ -803,23 +803,13 @@ int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di,
 
 	ret = SYSEXIT_PARAM;
 
-	if (merge_mode == PLOOP_MERGE_WITH_CHILD) {
-		parent_guid = guid;
-		child_guid = ploop_find_child_by_guid(di, guid);
-		if (!child_guid) {
-			ploop_err(0, "Can't find child of uuid %s", guid);
-			goto err;
-		}
-	} else if (merge_mode == PLOOP_MERGE_WITH_PARENT) {
-		child_guid = guid;
-		parent_guid = ploop_find_parent_by_guid(di, guid);
-		if (!parent_guid) {
-			ploop_err(0, "Can't find parent of uuid %s "
-					"(is that a base image?)", guid);
-			goto err;
-		}
-	} else
-		assert(0);
+	child_guid = guid;
+	parent_guid = ploop_find_parent_by_guid(di, guid);
+	if (!parent_guid) {
+		ploop_err(0, "Can't find parent of uuid %s "
+				"(is that a base image?)", guid);
+		goto err;
+	}
 
 	child_fname = find_image_by_guid(di, child_guid);
 	if (child_fname == NULL) {
@@ -1347,7 +1337,7 @@ int ploop_merge_snapshot(struct ploop_disk_images_data *di, struct ploop_merge_p
 		guid = di->top_guid;
 
 	if (guid != NULL) {
-		ret = ploop_merge_snapshot_by_guid(di, guid, PLOOP_MERGE_WITH_PARENT, param->new_delta);
+		ret = ploop_merge_snapshot_by_guid(di, guid, param->new_delta);
 	} else {
 		/* merge all from top to base */
 		guid = get_base_delta_uuid(di);

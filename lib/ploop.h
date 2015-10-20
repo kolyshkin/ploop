@@ -172,11 +172,6 @@ struct dump2fs_data {
 	uint32_t block_size;
 };
 
-enum {
-	PLOOP_MERGE_WITH_CHILD = 0,
-	PLOOP_MERGE_WITH_PARENT = 1,
-};
-
 /* flags for e2fsck() */
 enum e2fsck_flags {
 	E2FSCK_PREEN	= 1 << 0, /* -p */
@@ -427,7 +422,7 @@ int is_device_inuse(const char *dev);
 PL_EXT int get_delta_info(const char *device, struct merge_info *info);
 PL_EXT int merge_image(const char *device, int start_level, int end_level, int raw, int merge_top,
 		char **images, const char *new_delta);
-int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di, const char *guid, int merge_mode, const char *new_delta);
+int ploop_merge_snapshot_by_guid(struct ploop_disk_images_data *di, const char *guid, const char *new_delta);
 int merge_temporary_snapshots(struct ploop_disk_images_data *di);
 
 PL_EXT int ploop_change_fmt_version(struct ploop_disk_images_data *di,
