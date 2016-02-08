@@ -2077,7 +2077,7 @@ err:
 	return ret;
 }
 
-int mount_image(struct ploop_disk_images_data *di, struct ploop_mount_param *param, int flags)
+int mount_image(struct ploop_disk_images_data *di, struct ploop_mount_param *param)
 {
 	int ret;
 	char **images;
@@ -2165,7 +2165,7 @@ int auto_mount_image(struct ploop_disk_images_data *di,
 		return ret;
 	param->target = strdup(mnt);
 
-	return mount_image(di, param, 0);
+	return mount_image(di, param);
 }
 
 int ploop_mount_image(struct ploop_disk_images_data *di, struct ploop_mount_param *param)
@@ -2189,7 +2189,7 @@ int ploop_mount_image(struct ploop_disk_images_data *di, struct ploop_mount_para
 		goto err;
 	}
 
-	ret = mount_image(di, param, 0);
+	ret = mount_image(di, param);
 	if (ret == 0 && di->runtime->component_name == NULL)
 		merge_temporary_snapshots(di);
 err:
