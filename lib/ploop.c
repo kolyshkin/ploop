@@ -2233,6 +2233,7 @@ static int ploop_umount_fs(const char *mnt, struct ploop_disk_images_data *di)
 	 */
 	if (di != NULL && di->runtime->component_name == NULL)
 		store_statfs_info(mnt, di->images[0]->file);
+
 	ploop_log(0, "Unmounting file system at %s", mnt);
 	ret = do_umount(mnt);
 
@@ -2256,6 +2257,12 @@ int ploop_umount(const char *device, struct ploop_disk_images_data *di)
 	}
 
 	ret = ploop_stop_device(device);
+
+	if (di != NULL) {
+		get_temp_mountpoint(di->images[0]->file, 0, mnt, sizeof(mnt));
+		if (access(mnt, F_OK) == 0)
+			rmdir(mnt);
+	}
 
 	return ret;
 }
