@@ -445,4 +445,7 @@ int do_replace_delta(int devfd, int level, int imgfd, __u32 blocksize,
 		const char *image);
 int copy_delta(const char *src, const char *dst);
 
+int complete_running_operation(struct ploop_disk_images_data *di,
+		const char *device);
+
 #endif
