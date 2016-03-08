@@ -1387,9 +1387,11 @@ static int do_mntn_merge(struct ploop_disk_images_data *di, const char *device,
 		return ret;
 
 	/* make validation before real merge */
-	ret = ploop_di_merge_image(di, di->top_guid, &top_delta);
+	ret = ploop_di_merge_image(di, di->top_guid);
 	if (ret)
 		return ret;
+
+	top_delta = find_image_by_guid(di, di->top_guid);
 
 	ploop_log(0, "Repair %s: merge top delta %s", conf, top_delta);
 	if (strcmp(x, top_delta)) {
