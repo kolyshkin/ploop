@@ -304,18 +304,20 @@ int ploop_open_dd(struct ploop_disk_images_data **di, const char *fname)
 int find_image_idx_by_file(struct ploop_disk_images_data *di, const char *file)
 {
 	int i;
-	char basedir[PATH_MAX];
 	char image[PATH_MAX];
 
 	/* First we need to normalize the image file name
 	 * to be the same as in struct ploop_disk_images_data
 	 * as filled in by ploop_read_dd() and parse_xml().
 	 */
-	get_basedir(di->runtime->xml_fname, basedir, sizeof(basedir));
-	if (basedir[0] != 0 && file[0] != '/')
+	if (file[0] != '/') {
+		char basedir[PATH_MAX];
+
+		get_basedir(di->runtime->xml_fname, basedir, sizeof(basedir));
 		snprintf(image, sizeof(image), "%s%s", basedir, file);
-	else
+	} else {
 		snprintf(image, sizeof(image), "%s", file);
+	}
 
 	for (i = 0; i < di->nimages; i++) {
 		if (!strcmp(image, di->images[i]->file))
