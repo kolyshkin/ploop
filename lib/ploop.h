@@ -67,6 +67,8 @@
 #define ROUNDUP(size, blocksize) \
 	(((off_t)size + blocksize - 1) / blocksize * blocksize)
 
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
 #define PLOOP_LOCK_DIR	"/var/lock/ploop"
 
 /* PATH used by the library */

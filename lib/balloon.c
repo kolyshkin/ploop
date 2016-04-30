@@ -1182,7 +1182,8 @@ static void defrag_complete(const char *dev)
 	char cmdline[64];
 	pid_t pid;
 	FILE *fp;
-	char cmd[64]; // sizeof(BIN_E4DEFRAG) rounded up
+	char cmd[64];
+	BUILD_BUG_ON(sizeof(cmd) <= sizeof(BIN_E4DEFRAG));
 
 	defrag_pidfile(dev, buf, sizeof(buf));
 
