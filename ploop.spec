@@ -1,7 +1,7 @@
 %define _incdir /usr/include/ploop
 Summary: ploop tools
 Name: ploop
-Version: 1.14.1
+Version: 1.15
 %define rel 1
 Release: %{rel}%{?dist}
 Group: Applications/System
@@ -94,6 +94,44 @@ Headers and a static version of ploop library
 %attr(644,root,root) %{_incdir}/dynload.h
 
 %changelog
+* Fri Apr 29 2016 Kir Kolyshkin <kir@openvz.org> 1.15-1
+- New functionality:
+-- ploop defragmentation support using e4defrag2
+-- mount_image: return SYSEXIT_NOSNAP error
+-- Add ploop_get_base_delta_fname()
+-- Allow to create image > 16TB (without filesystem inside)
+- Fixes:
+-- Fix resizing image mounted inside mnt namespace
+-- ploop_get_devs: fix NULL pointer dereference
+-- copy_delta(): avoid double-free
+-- fix infinite loop in ploop balloon discard
+-- Fix compile with gcc-5.3.0
+-- ploop_mount_fs: don't mount ro when finding balloon inode
+-- Remove temp mount point after ploop resize
+-- Repair DiskDescriptot.xml on process PLOOP_MNTN_MERGE stage
+- Improvements:
+-- make_fs(): drop lazy_journal_init
+-- scripts/umount.ploop: rm unused var
+-- do_delete_snapshot(): don't use PLOOP_MERGE_WITH_CHILD
+-- ploop_merge_snapshot_by_guid(): remove merge_mode
+-- balloon.c: no need to include libgen.h
+-- defrag_complete: fix a typo
+-- defrag_complete(): report errors
+-- defrag_complete(): check for cmdline
+-- defrag_complete(): report stale pidfile
+-- gensym.sh: busybox sed compatibility
+-- musl (Alpine Linux) compile fixes
+-- mount_image(): kill flags argument
+-- do_mntn_merge(): fix the check for same file
+-- find_image_idx_by_file: get_basedir() only if needed
+-- discard/defrag: take into account image size change caused by defrag
+- Documentation:
+-- ploop balloon discard: document --defrag
+-- ploop(8): document --defrag
+- Build system:
+-- setver.sh: fix a typo
+
+
 * Mon Sep 21 2015 Kir Kolyshkin <kir@openvz.org> 1.14.1-1
 - Fixes:
 -- if mke2fs fails, retry it without -Elazy_journal_init (#OVZ-6539)
