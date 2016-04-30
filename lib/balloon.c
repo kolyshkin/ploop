@@ -1182,7 +1182,7 @@ static void defrag_complete(const char *dev)
 	char cmdline[64];
 	pid_t pid;
 	FILE *fp;
-	char *cmd;
+	char cmd[64]; // sizeof(BIN_E4DEFRAG) rounded up
 
 	defrag_pidfile(dev, buf, sizeof(buf));
 
@@ -1201,25 +1201,16 @@ static void defrag_complete(const char *dev)
 	fclose(fp);
 
 	snprintf(cmdline, sizeof(cmdline), "/proc/%d/cmdline", pid);
-	fp = fopen(cmdline, "r");
-	if (fp == NULL) {
-		// no process with such pid, possible stale file
+	if (read_line(cmdline, cmd, sizeof(cmd))) {
+		// error is printed by read_line()
 		goto stale;
 	}
 
-	if (fscanf(fp, "%ms", &cmd) != 1) {
-		// the process just gone
-		fclose(fp);
-		return;
-	}
-	fclose(fp);
-
+	// we rely on the fact that cmdline has \0 after argv[0]
 	if (strcmp(BIN_E4DEFRAG, cmd) != 0) {
 		// some other process that happen to reuse our pid
-		free(cmd);
 		goto stale;
 	}
-	free(cmd);
 
 	ploop_log(0, "Cancelling defrag dev=%s pid=%d", dev, pid);
 	kill(pid, SIGTERM);
