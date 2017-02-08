@@ -1150,7 +1150,13 @@ static int plooptool_list(int argc, char **argv)
 
 		if (all) {
 			mnt[0] = '\0';
-			snprintf(dev, sizeof(dev), "/dev/%s", de->d_name);
+			if (snprintf(dev, sizeof(dev), "/dev/%s",
+						de->d_name) >= sizeof(dev)) {
+				fprintf(stderr, "Warning: skipping bad entry "
+						"in /dev: %s\n", de->d_name);
+				continue;
+
+			}
 			ploop_get_mnt_by_dev(dev, mnt, sizeof(mnt));
 		}
 		printf("%-12s %s %s %s\n", de->d_name, image, mnt, cookie);

@@ -427,7 +427,13 @@ int ploop_get_dev_by_delta(const char *delta, const char *topdelta,
 		if (component_name && strncmp(component_name, cookie, sizeof(cookie)))
 			continue;
 
-		snprintf(dev, sizeof(dev), "/dev/%s", de->d_name);
+		if (snprintf(dev, sizeof(dev), "/dev/%s",
+					de->d_name) >= sizeof(dev)) {
+			ploop_log(0, "Warning: skipping bad entry "
+					"in /dev: %s\n", de->d_name);
+			continue;
+		}
+
 		t = realloc(*out, (nelem+1) * sizeof(char *));
 		if (t == NULL) {
 			ploop_err(ENOMEM, "Memory allocation failed");
